@@ -17,11 +17,11 @@
     ],
     "require": {
         "php": "^7.4",
-        "illuminate/support": "^6.0",
+        "illuminate/support": "^7.0",
         "laravel/vapor-core": "^2.6"
     },
     "require-dev": {
-        "orchestra/testbench": "^4.0",
+        "orchestra/testbench": "^5.0",
         "phpunit/phpunit": "^8.0"
     },
     "autoload": {
