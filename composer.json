@@ -31,7 +31,8 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "Booni3\\VaporQueueManager\\Tests\\": "tests"
+            "Booni3\\VaporQueueManager\\Tests\\": "tests",
+            "Illuminate\\": "src/Illuminate"
         }
     },
     "scripts": {
