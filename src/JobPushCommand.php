@@ -46,7 +46,7 @@ class JobPushCommand extends Command
     {
         parent::__construct();
 
-        $this->cache = $this->laravel['cache']->driver();
+        $this->cache = app('cache')->driver();
     }
 
     /**
