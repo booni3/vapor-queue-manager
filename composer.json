@@ -1,0 +1,55 @@
+{
+    "name": "booni3/vapor-queue-manager",
+    "description": "A basic queue management system for vapor running on sqs",
+    "keywords": [
+        "booni3",
+        "vapor-queue-manager"
+    ],
+    "homepage": "https://github.com/booni3/vapor-queue-manager",
+    "license": "MIT",
+    "type": "library",
+    "authors": [
+        {
+            "name": "Adam Lambert",
+            "email": "adam@profilestudio.com",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "php": "^7.4",
+        "illuminate/support": "^6.0",
+        "laravel/vapor-core": "^2.6"
+    },
+    "require-dev": {
+        "orchestra/testbench": "^4.0",
+        "phpunit/phpunit": "^8.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Booni3\\VaporQueueManager\\": "src"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Booni3\\VaporQueueManager\\Tests\\": "tests"
+        }
+    },
+    "scripts": {
+        "test": "vendor/bin/phpunit",
+        "test-coverage": "vendor/bin/phpunit --coverage-html coverage"
+
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Booni3\\VaporQueueManager\\VaporQueueManagerServiceProvider"
+            ],
+            "aliases": {
+                "VaporQueueManager": "Booni3\\VaporQueueManager\\VaporQueueManagerFacade"
+            }
+        }
+    }
+}
