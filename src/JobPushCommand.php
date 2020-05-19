@@ -86,11 +86,11 @@ class JobPushCommand extends Command
         $this->dispatchableQueues = $this->distinctQueuesInJobsTable();
 
         while ($this->shouldLoop()) {
-            Redis::funnel('dispatchEligibleJobs')->limit(1)->then(function () {
+//            Redis::funnel('dispatchEligibleJobs')->limit(1)->then(function () {
                 $this->dispatchEligibleJobs();
-            }, function () {
-                // Could not obtain lock...
-            });
+//            }, function () {
+//                 Could not obtain lock...
+//            });
         }
     }
 
