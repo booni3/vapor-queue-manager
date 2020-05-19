@@ -94,7 +94,7 @@ trait ThrottlesVaporJob
 
     protected function incrementFunnel($queue, $payload)
     {
-        $queue =  $this->virtualQueue($payload) ?? $queue;
+        $queue =  $this->virtualQueueFromPayload($payload) ?? $queue;
 
         foreach ($this->throttleKeys($queue) as $key) {
             $key = $this->funnelKey($key);
@@ -127,15 +127,19 @@ trait ThrottlesVaporJob
 
     protected function virtualQueueFromPayload($payload): ?string
     {
-        Log::info('virtual queue', $payload);
-
-        if(is_string($payload)){
-            return json_decode($payload)->virtualQueue ?? null;
+        if($payload = json_decode($payload)){
+            if(json_last_error() == JSON_ERROR_NONE){
+                \Sentry::captureMessage('virtualQueueFromPayload json: '.$payload->virtualQueue);
+                return $payload->virtualQueue ?? null;
+            }
         }
 
         if(is_array($payload)){
+            \Sentry::captureMessage('virtualQueueFromPayload array: '.$payload->virtualQueue);
             return $payload->virtualQueue ?? null;
         }
+
+        \Sentry::captureMessage('virtualQueueFromPayload none');
 
         return null;
     }
