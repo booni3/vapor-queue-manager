@@ -111,8 +111,12 @@ trait ThrottlesVaporJob
     {
         $queue =  $this->virtualQueue($payload) ?? $queue;
 
+        \Sentry::captureMessage('queue: '.$queue);
+
         foreach ($this->throttleKeys($queue) as $key) {
             $key = $this->funnelKey($key);
+
+            \Sentry::captureMessage('key: '.$key);
 
             if (Cache::has($key) && Cache::decrement($key) <= 0) {
                 Cache::delete($key);
