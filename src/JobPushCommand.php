@@ -13,6 +13,7 @@ use Illuminate\Queue\SqsQueue;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\Redis;
 
 class JobPushCommand extends Command
 {
@@ -90,7 +91,11 @@ class JobPushCommand extends Command
             ->toArray();
 
         while ($this->shouldLoop()) {
-            $this->dispatchEligibleJobs();
+            Redis::funnel('dispatchEligibleJobs')->limit(1)->then(function () {
+                $this->dispatchEligibleJobs();
+            }, function () {
+                // Could not obtain lock...
+            });
         }
     }
 
