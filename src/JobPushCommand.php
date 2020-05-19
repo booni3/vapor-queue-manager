@@ -5,14 +5,20 @@ namespace Booni3\VaporQueueManager;
 
 
 use App\Traits\ThrottlesVaporJob;
+use Aws\Sqs\SqsClient;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Cache\Repository;
+use Illuminate\Queue\SqsQueue;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Queue;
 
 class JobPushCommand extends Command
 {
     use ThrottlesVaporJob;
+
+    /** @var string */
+    protected $defaultQueue;
 
     /** @var array */
     protected $limits;
@@ -22,6 +28,9 @@ class JobPushCommand extends Command
 
     /** @var Repository*/
     protected $cache;
+
+    /** @var array*/
+    protected $sqsQueues;
 
     /**
      * The name and signature of the console command.
@@ -56,17 +65,23 @@ class JobPushCommand extends Command
      */
     public function handle()
     {
+        $this->sqsQueues = $this->getSqsQueues();
+        $this->defaultQueue = config('vapor-queue-manager.config.default_queue');
+        $this->limits = config('vapor-queue-manager.config.limits');
+
         while ($this->shouldLoop()) {
-            $this->getThrottleParameters();
             $this->dispatchEligibleJobs();
         }
     }
 
-    protected function getThrottleParameters()
+    protected function getSqs(): SqsClient
     {
-        $this->limits = [
-            'oflow-app-staging' => ['allow' => 1, 'every' => 60, 'funnel' => 1],
-        ];
+        return app('queue')->getSqs();
+    }
+
+    protected function getSqsQueues(): array
+    {
+        return $this->getSqs()->listQueues()->get('QueueUrls');
     }
 
     protected function dispatchEligibleJobs()
@@ -75,21 +90,35 @@ class JobPushCommand extends Command
             ->oldest('id')
             ->cursor()
             ->groupBy('queue')
-            ->each(function (Collection $jobs, $queue) {
+            ->each(function (Collection $jobs, $key) {
                 foreach ($jobs as $job) {
-                    if ($this->isThrottled($queue, $job->payload)) {
+                    if ($this->isThrottled($key, $job->payload)) {
                         return true;
                     }
 
                     $this->dispatchJobToSqs($job);
-                    $this->incrementFunnel($queue, $job->payload);
+                    $this->jobDispatched($key, $job);
                 }
             });
     }
 
     protected function dispatchJobToSqs($job)
     {
-        Queue::pushRawDirect($job->payload, $job->queue);
+        Queue::pushRawDirect($job->payload, $this->toValidSqsQueue($job));
+    }
+
+    protected function toValidSqsQueue($job): string
+    {
+        if(in_array($job->queue, $this->sqsQueues)){
+            return $job->queue;
+        }
+
+        return $this->defaultQueue;
+    }
+
+    protected function jobDispatched($key, $job)
+    {
+        $this->incrementFunnel($key, $job->payload);
         DB::table('jobs')->delete($job->id);
     }
 
