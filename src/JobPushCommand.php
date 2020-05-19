@@ -33,6 +33,9 @@ class JobPushCommand extends Command
     /** @var array*/
     protected $sqsQueues;
 
+    /** @var array*/
+    protected $queues;
+
     /** @var array */
     protected $limits;
 
@@ -79,6 +82,12 @@ class JobPushCommand extends Command
         $this->sqs = Queue::getSqs();
         $this->sqsQueues = $this->sqs->listQueues()->get('QueueUrls');
 
+        $this->queues = DB::table('jobs')
+            ->select('queue')
+            ->distinct('queue')
+            ->pluck('queue')
+            ->toArray();
+
         while ($this->shouldLoop()) {
             $this->dispatchEligibleJobs();
         }
@@ -86,20 +95,19 @@ class JobPushCommand extends Command
 
     protected function dispatchEligibleJobs()
     {
-        DB::table('jobs')
-            ->oldest('id')
-            ->cursor()
-            ->groupBy('queue')
-            ->each(function (Collection $jobs, $queue) {
-                foreach ($jobs as $job) {
+        foreach($this->queues as $queue){
+            DB::table('jobs')
+                ->where('queue', $queue)
+                ->cursor()
+                ->each(function($job) use($queue){
                     if ($this->isThrottled($queue)) {
                         return true;
                     }
 
                     $this->dispatchJobToSqs($job);
                     $this->jobDispatched($queue, $job);
-                }
-            });
+                });
+        }
     }
 
     protected function dispatchJobToSqs($job)
