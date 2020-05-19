@@ -7,14 +7,20 @@ namespace Booni3\VaporQueueManager;
 use App\Traits\ThrottlesVaporJob;
 use Aws\Sqs\SqsClient;
 use Carbon\Carbon;
+use Illuminate\Cache\CacheManager;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Cache\Repository;
+use Illuminate\Database\DatabaseManager;
+use Illuminate\Queue\QueueManager;
 use Illuminate\Queue\SqsQueue;
 use Illuminate\Support\Collection;
 
 class JobPushCommand extends Command
 {
     use ThrottlesVaporJob;
+
+    /** @var DatabaseManager */
+    protected $database;
 
     /** @var \Illuminate\Contracts\Queue\Queue|SqsQueue */
     protected $queue;
@@ -56,12 +62,13 @@ class JobPushCommand extends Command
      *
      * @return void
      */
-    public function __construct()
+    public function __construct(DatabaseManager $database, QueueManager $queue, CacheManager $cache)
     {
         parent::__construct();
 
-        $this->queue = app('queue');
-        $this->cache = app('cache')->driver();
+        $this->database = $database;
+        $this->queue = $queue;
+        $this->cache = $cache->driver();
         $this->defaultQueue = config('vapor-queue-manager.default_queue');
         $this->limits = config('vapor-queue-manager.limits');
     }
@@ -83,7 +90,9 @@ class JobPushCommand extends Command
 
     protected function dispatchEligibleJobs()
     {
-        DB::table('jobs')
+        $this
+            ->database
+            ->table('jobs')
             ->oldest('id')
             ->cursor()
             ->groupBy('queue')
@@ -116,7 +125,7 @@ class JobPushCommand extends Command
     protected function jobDispatched($key, $job)
     {
         $this->incrementFunnel($key, $job->payload);
-        DB::table('jobs')->delete($job->id);
+        $this->database->table('jobs')->delete($job->id);
     }
 
     protected function shouldLoop($maxRunTime = 60, $loopDelay = 1): bool
