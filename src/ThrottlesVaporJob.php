@@ -4,8 +4,10 @@
 namespace App\Traits;
 
 
+use Illuminate\Cache\RedisStore;
 use Illuminate\Cache\Repository;
 use Illuminate\Support\Str;
+use Mockery\Exception;
 
 trait ThrottlesVaporJob
 {
@@ -45,6 +47,10 @@ trait ThrottlesVaporJob
     {
         if(! ($limit['allow'] && $limit['every'])){
             return false;
+        }
+
+        if(! $this->cache->getStore() instanceof RedisStore){
+            throw new Exception('You must have redis installed to use the time based throttle');
         }
 
         // Uses Redis::throttle
