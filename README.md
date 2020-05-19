@@ -15,22 +15,53 @@ You can install the package via composer:
 composer require booni3/vapor-queue-manager
 ```
 
-You also need to exclude the SqsQueue in your main composer file.
-This is a quick way to switch out the implementation for this demo.
+After installation, you need to switch out the implementation of the SqsQueue class
+in your main composer file. Yes this is hacky, but it is a proof of concept at this stage only.
+
+Adding the `Illuminate` namespace and excluding the original from the classmap will ensure that our
+SqsQueue class is used whenever it is instantiated throughout the framework.
 
 ```json
 "autoload": {
     "exclude-from-classmap": [
         "vendor/laravel/framework/src/Illuminate/Queue/SqsQueue.php"
-    ]
+    ],
+    "psr-4": {
+        "App\\": "app/",
+        "Illuminate\\": "vendor/booni3/vapor-queue-manager/src/Illuminate"
+    }
 }
 ```
 
 ## Usage
 
-``` php
-// Usage description here
+- Install the package
+- Publish the config and migration
+- Run the migration
+- Add queues to your config
+
+In your configuration file, ensure to set the default queue up to match your SQS main queue for
+the vapor environment. This is usually "your-app-name-environment"
+
+In the limits section, you can set up both time based throttles and funnel based throttles. 
+
+The funnel implementation uses your standard cache driver (Redis/Dynamo).
+
+For now, we are using redis for the `Redis::throttle` implementation. If you do not have redis installed 
+then you can disable this by leaving the allow/every keys as null blank.
+
+```php
+return [
+    'default_queue' => 'vapor-app-staging',
+
+    'limits' => [
+        'vapor-app-staging' => ['allow' => 1, 'every' => 60, 'funnel' => 1],
+        'virtual-queue-1' => ['allow' => 5, 'every' => 60, 'funnel' => 5],
+        'virtual-queue-2' => ['allow' => null, 'every' => null, 'funnel' => 5], // funnel only
+    ]
+];
 ```
+
 
 ### Testing
 

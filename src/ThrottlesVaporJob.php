@@ -5,7 +5,6 @@ namespace App\Traits;
 
 
 use Illuminate\Cache\Repository;
-use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Str;
 
 trait ThrottlesVaporJob
@@ -44,7 +43,12 @@ trait ThrottlesVaporJob
 
     protected function isThrottledByTime($key, $limit): bool
     {
-        Redis::connection('cache')
+        if(! ($limit['allow'] && $limit['every'])){
+            return false;
+        }
+
+        // Uses Redis::throttle
+        $this->cache
             ->throttle($this->timeKey($key))
             ->block(0)
             ->allow($limit['allow']) // jobs
@@ -64,6 +68,10 @@ trait ThrottlesVaporJob
 
     protected function isThrottledByFunnel($key, $limit): bool
     {
+        if(! $limit['funnel']){
+            return false;
+        }
+
         $key = $this->funnelKey($key);
 
         if ($jobsInFunnel = $this->cache->get($key, null)) {
