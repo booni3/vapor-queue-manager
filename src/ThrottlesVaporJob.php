@@ -87,9 +87,7 @@ trait ThrottlesVaporJob
 
     protected function incrementFunnel($queue, $payload)
     {
-        if ($virtualQueue = json_decode($payload)->virtualQueue ?? null) {
-            $queue = $virtualQueue;
-        }
+        $queue =  $this->virtualQueue($payload) ?? $queue;
 
         foreach ($this->throttleKeys($queue) as $key) {
             $key = $this->funnelKey($key);
@@ -105,9 +103,7 @@ trait ThrottlesVaporJob
 
     protected function decrementFunnel($queue, $payload)
     {
-        if ($virtualQueue = json_decode($payload)->virtualQueue ?? null) {
-            $queue = $virtualQueue;
-        }
+        $queue =  $this->virtualQueue($payload) ?? $queue;
 
         foreach ($this->throttleKeys($queue) as $key) {
             $key = $this->funnelKey($key);
@@ -116,6 +112,19 @@ trait ThrottlesVaporJob
                 $this->cache->delete($key);
             }
         }
+    }
+
+    protected function virtualQueue($payload): ?string
+    {
+        if(is_string($payload)){
+            return json_decode($payload)->virtualQueue ?? null;
+        }
+
+        if(is_array($payload)){
+            return $payload->virtualQueue ?? null;
+        }
+
+        return null;
     }
 
     protected function funnelKey($key): string
