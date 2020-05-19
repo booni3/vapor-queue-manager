@@ -35,7 +35,7 @@ class JobPushCommand extends Command
     protected $sqsQueues;
 
     /** @var array*/
-    protected $queues;
+    protected $dispatchableQueues;
 
     /** @var array */
     protected $limits;
@@ -83,12 +83,7 @@ class JobPushCommand extends Command
     {
         $this->sqs = Queue::getSqs();
         $this->sqsQueues = $this->sqs->listQueues()->get('QueueUrls');
-
-        $this->queues = DB::table('jobs')
-            ->select('queue')
-            ->distinct('queue')
-            ->pluck('queue')
-            ->toArray();
+        $this->dispatchableQueues = $this->distinctQueuesInJobsTable();
 
         while ($this->shouldLoop()) {
             Redis::funnel('dispatchEligibleJobs')->limit(1)->then(function () {
@@ -99,10 +94,20 @@ class JobPushCommand extends Command
         }
     }
 
+    protected function distinctQueuesInJobsTable(): array
+    {
+        return DB::table('jobs')
+            ->select('queue')
+            ->distinct('queue')
+            ->pluck('queue')
+            ->toArray();
+    }
+
     protected function dispatchEligibleJobs()
     {
-        foreach($this->queues as $queue){
+        foreach($this->dispatchableQueues as $queue){
             DB::table('jobs')
+                ->oldest('id')
                 ->where('queue', $queue)
                 ->cursor()
                 ->each(function($job) use($queue){
