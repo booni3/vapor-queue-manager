@@ -6,14 +6,13 @@ namespace Booni3\VaporQueueManager;
 
 use Aws\Sqs\SqsClient;
 use Carbon\Carbon;
-use Illuminate\Cache\CacheManager;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Cache\Repository;
 use Illuminate\Database\DatabaseManager;
-use Illuminate\Queue\QueueManager;
 use Illuminate\Queue\SqsQueue;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Queue;
 
 class JobPushCommand extends Command
 {
@@ -62,13 +61,10 @@ class JobPushCommand extends Command
      *
      * @return void
      */
-    public function __construct(DatabaseManager $database, QueueManager $queue, CacheManager $cache)
+    public function __construct()
     {
         parent::__construct();
 
-        $this->database = $database;
-        $this->queue = $queue;
-        $this->cache = $cache->driver();
         $this->defaultQueue = config('vapor-queue-manager.default_queue');
         $this->limits = config('vapor-queue-manager.limits');
     }
@@ -80,7 +76,7 @@ class JobPushCommand extends Command
      */
     public function handle()
     {
-        $this->sqs = $this->queue->getSqs();
+        $this->sqs = Queue::getSqs();
         $this->sqsQueues = $this->sqs->listQueues()->get('QueueUrls');
 
         while ($this->shouldLoop()) {
@@ -117,7 +113,7 @@ class JobPushCommand extends Command
             $payload = json_encode($payload);
         }
 
-        $this->queue->pushRawDirect($payload ?? $job->payload, $this->toValidSqsQueue($job));
+        Queue::pushRawDirect($payload ?? $job->payload, $this->toValidSqsQueue($job));
     }
 
     protected function toValidSqsQueue($job): string
@@ -137,7 +133,7 @@ class JobPushCommand extends Command
     protected function jobDispatched($key, $job)
     {
         $this->incrementFunnel($key, $job->payload);
-        $this->database->table('jobs')->delete($job->id);
+        DB::table('jobs')->delete($job->id);
     }
 
     protected function shouldLoop($maxRunTime = 60, $loopDelay = 1): bool

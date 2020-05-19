@@ -5,15 +5,13 @@ namespace Booni3\VaporQueueManager;
 
 
 use Illuminate\Cache\RedisStore;
-use Illuminate\Cache\Repository;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Str;
 use Mockery\Exception;
 
 trait ThrottlesVaporJob
 {
-    /** @var Repository */
-    protected $cache;
 
     public function isThrottled($queue)
     {
@@ -56,7 +54,7 @@ trait ThrottlesVaporJob
             return false;
         }
 
-        if (!$this->cache->getStore() instanceof RedisStore) {
+        if (! Cache::getStore() instanceof RedisStore) {
             throw new Exception('You must have redis installed to use the time based throttle');
         }
 
@@ -85,7 +83,7 @@ trait ThrottlesVaporJob
 
         $key = $this->funnelKey($key);
 
-        if ($jobsInFunnel = $this->cache->get($key, null)) {
+        if ($jobsInFunnel = Cache::get($key, null)) {
             if ($jobsInFunnel >= $limit['funnel']) {
                 return true;
             }
@@ -100,10 +98,10 @@ trait ThrottlesVaporJob
         foreach ($this->throttleKeys($queue) as $key) {
             $key = $this->funnelKey($key);
 
-            if (!$this->cache->has($key)) {
-                $this->cache->set($key, 1, now()->addMinutes(10));
+            if (! Cache::has($key)) {
+                Cache::set($key, 1, now()->addMinutes(10));
             } else {
-                $this->cache->increment($key);
+                Cache::increment($key);
             }
         }
 
@@ -116,8 +114,8 @@ trait ThrottlesVaporJob
         foreach ($this->throttleKeys($queue) as $key) {
             $key = $this->funnelKey($key);
 
-            if ($this->cache->has($key) && $this->cache->decrement($key) <= 0) {
-                $this->cache->delete($key);
+            if (Cache::has($key) && Cache::decrement($key) <= 0) {
+                Cache::delete($key);
             }
         }
     }
