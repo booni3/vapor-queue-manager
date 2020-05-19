@@ -1,11 +1,11 @@
 # Very short description of the package
 
-[![Latest Version on Packagist](https://img.shields.io/packagist/v/booni3/vapor-queue-manager.svg?style=flat-square)](https://packagist.org/packages/booni3/vapor-queue-manager)
-[![Build Status](https://img.shields.io/travis/booni3/vapor-queue-manager/master.svg?style=flat-square)](https://travis-ci.org/booni3/vapor-queue-manager)
-[![Quality Score](https://img.shields.io/scrutinizer/g/booni3/vapor-queue-manager.svg?style=flat-square)](https://scrutinizer-ci.com/g/booni3/vapor-queue-manager)
-[![Total Downloads](https://img.shields.io/packagist/dt/booni3/vapor-queue-manager.svg?style=flat-square)](https://packagist.org/packages/booni3/vapor-queue-manager)
+This is only a proof of concept. 
 
-This is where your description should go. Try and limit it to a paragraph or two, and maybe throw in a mention of what PSRs you support to avoid any confusion with users and contributors.
+A way to manage queues on Laravel Vapor. Its main features include:
+
+- Throttle queue by time and/or concurrency
+- Have multiple queues (SQS named or Virtual) 
 
 ## Installation
 
@@ -13,6 +13,17 @@ You can install the package via composer:
 
 ```bash
 composer require booni3/vapor-queue-manager
+```
+
+You also need to exclude the SqsQueue in your main composer file.
+This is a quick way to switch out the implementation for this demo.
+
+```json
+"autoload": {
+    "exclude-from-classmap": [
+        "vendor/laravel/framework/src/Illuminate/Queue/SqsQueue.php"
+    ]
+}
 ```
 
 ## Usage

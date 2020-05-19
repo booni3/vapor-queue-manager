@@ -28,6 +28,11 @@ class VaporQueueManagerServiceProvider extends ServiceProvider
                 __DIR__.'/../config/config.php' => config_path('vapor-queue-manager.php'),
             ], 'config');
 
+            $this->publishes([
+                __DIR__.'/../database/migrations/create_jobs_table.php.stub' => database_path('migrations/'
+                    .date('Y_m_d_His', time()).'_create_jobs_table.php'),
+            ], 'migrations');
+
             // Publishing the views.
             /*$this->publishes([
                 __DIR__.'/../resources/views' => resource_path('views/vendor/vapor-queue-manager'),

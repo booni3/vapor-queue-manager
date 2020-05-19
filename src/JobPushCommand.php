@@ -11,14 +11,22 @@ use Illuminate\Console\Command;
 use Illuminate\Contracts\Cache\Repository;
 use Illuminate\Queue\SqsQueue;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Queue;
 
 class JobPushCommand extends Command
 {
     use ThrottlesVaporJob;
 
+    /** @var \Illuminate\Contracts\Queue\Queue|SqsQueue */
+    protected $queue;
+
     /** @var string */
     protected $defaultQueue;
+
+    /** @var SqsClient */
+    protected $sqs;
+
+    /** @var array*/
+    protected $sqsQueues;
 
     /** @var array */
     protected $limits;
@@ -28,9 +36,6 @@ class JobPushCommand extends Command
 
     /** @var Repository*/
     protected $cache;
-
-    /** @var array*/
-    protected $sqsQueues;
 
     /**
      * The name and signature of the console command.
@@ -65,6 +70,8 @@ class JobPushCommand extends Command
      */
     public function handle()
     {
+        $this->queue = app('queue');
+        $this->sqs = $this->queue->getSqs();
         $this->sqsQueues = $this->getSqsQueues();
         $this->defaultQueue = config('vapor-queue-manager.config.default_queue');
         $this->limits = config('vapor-queue-manager.config.limits');
@@ -74,14 +81,9 @@ class JobPushCommand extends Command
         }
     }
 
-    protected function getSqs(): SqsClient
-    {
-        return app('queue')->getSqs();
-    }
-
     protected function getSqsQueues(): array
     {
-        return $this->getSqs()->listQueues()->get('QueueUrls');
+        return $this->sqs->listQueues()->get('QueueUrls');
     }
 
     protected function dispatchEligibleJobs()
@@ -104,7 +106,7 @@ class JobPushCommand extends Command
 
     protected function dispatchJobToSqs($job)
     {
-        Queue::pushRawDirect($job->payload, $this->toValidSqsQueue($job));
+        $this->queue->pushRawDirect($job->payload, $this->toValidSqsQueue($job));
     }
 
     protected function toValidSqsQueue($job): string
