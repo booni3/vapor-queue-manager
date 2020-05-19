@@ -64,11 +64,6 @@ class JobPushCommand extends Command
         $this->cache = app('cache')->driver();
         $this->defaultQueue = config('vapor-queue-manager.default_queue');
         $this->limits = config('vapor-queue-manager.limits');
-
-        $this->info($this->defaultQueue);
-        $this->info($this->limits);
-
-        dd('ok');
     }
 
     /**
@@ -80,6 +75,12 @@ class JobPushCommand extends Command
     {
         $this->sqs = $this->queue->getSqs();
         $this->sqsQueues = $this->sqs->listQueues()->get('QueueUrls');
+
+        $this->info($this->sqsQueues);
+        $this->info($this->defaultQueue);
+        $this->info($this->limits);
+
+        dd('ok');
 
         while ($this->shouldLoop()) {
             $this->dispatchEligibleJobs();
