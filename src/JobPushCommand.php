@@ -86,9 +86,7 @@ class JobPushCommand extends Command
 
     protected function dispatchEligibleJobs()
     {
-        $this
-            ->database
-            ->table('jobs')
+        DB::table('jobs')
             ->oldest('id')
             ->cursor()
             ->groupBy('queue')
