@@ -101,7 +101,7 @@ class JobPushCommand extends Command
                 ->cursor()
                 ->each(function($job) use($queue){
                     if ($this->isThrottled($queue)) {
-                        return true;
+                        return false;
                     }
 
                     $this->dispatchJobToSqs($job);
