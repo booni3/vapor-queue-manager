@@ -114,6 +114,7 @@ class JobPushCommand extends Command
         if($this->usingVirtualQueue($job)){
             $payload = json_decode($job->payload);
             $payload->virtualQueue = $this->normalizedQueueName($job->queue);
+            $payload = json_encode($payload);
         }
 
         $this->queue->pushRawDirect($payload ?? $job->payload, $this->toValidSqsQueue($job));
