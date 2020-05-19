@@ -1,7 +1,7 @@
 <?php
 
 
-namespace App\Traits;
+namespace Booni3\VaporQueueManager;
 
 
 use Illuminate\Cache\RedisStore;
@@ -14,9 +14,9 @@ trait ThrottlesVaporJob
     /** @var Repository */
     protected $cache;
 
-    public function isThrottled($queue, $payload)
+    public function isThrottled($queue)
     {
-        foreach ($this->throttleKeys($queue, $payload) as $key) {
+        foreach ($this->throttleKeys($queue) as $key) {
             if (! $limit = $this->limits[$key] ?? false) {
                 throw new \Exception('Throttle key (' . $key . ') limits not defined');
             }
@@ -33,23 +33,20 @@ trait ThrottlesVaporJob
         return false;
     }
 
-    protected function throttleKeys($queue, $payload): array
+    protected function throttleKeys($queue): array
     {
-        // Throttle by queue
-        if (Str::startsWith($queue, 'http')) {
-            $queue = substr($queue, strrpos($queue, '/') + 1);
-        }
-
-        return [$queue];
+        return [
+            $this->normalizedQueueName($queue)
+        ];
     }
 
     protected function isThrottledByTime($key, $limit): bool
     {
-        if(! ($limit['allow'] && $limit['every'])){
+        if (!($limit['allow'] && $limit['every'])) {
             return false;
         }
 
-        if(! $this->cache->getStore() instanceof RedisStore){
+        if (!$this->cache->getStore() instanceof RedisStore) {
             throw new Exception('You must have redis installed to use the time based throttle');
         }
 
@@ -74,7 +71,7 @@ trait ThrottlesVaporJob
 
     protected function isThrottledByFunnel($key, $limit): bool
     {
-        if(! $limit['funnel']){
+        if (! $limit['funnel']) {
             return false;
         }
 
@@ -90,20 +87,29 @@ trait ThrottlesVaporJob
 
     protected function incrementFunnel($queue, $payload)
     {
-        foreach ($this->throttleKeys($queue, $payload) as $key) {
+        if ($virtualQueue = json_decode($payload)->virtualQueue ?? null) {
+            $queue = $virtualQueue;
+        }
+
+        foreach ($this->throttleKeys($queue) as $key) {
             $key = $this->funnelKey($key);
 
-            if (! $this->cache->has($key)) {
+            if (!$this->cache->has($key)) {
                 $this->cache->set($key, 1, now()->addMinutes(10));
             } else {
                 $this->cache->increment($key);
             }
         }
+
     }
 
     protected function decrementFunnel($queue, $payload)
     {
-        foreach ($this->throttleKeys($queue, $payload) as $key) {
+        if ($virtualQueue = json_decode($payload)->virtualQueue ?? null) {
+            $queue = $virtualQueue;
+        }
+
+        foreach ($this->throttleKeys($queue) as $key) {
             $key = $this->funnelKey($key);
 
             if ($this->cache->has($key) && $this->cache->decrement($key) <= 0) {

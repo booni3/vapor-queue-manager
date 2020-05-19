@@ -2,7 +2,6 @@
 
 namespace Booni3\VaporQueueManager;
 
-use App\Traits\ThrottlesVaporJob;
 use Illuminate\Queue\Events\JobFailed;
 use Illuminate\Queue\Events\JobProcessed;
 use Illuminate\Queue\Events\JobProcessing;
@@ -74,15 +73,15 @@ class VaporQueueManagerServiceProvider extends ServiceProvider
 
     protected function listenForEvents()
     {
-        Event::listen(JobProcessing::class, function ($event) {
+        Event::listen(JobProcessing::class, function (JobProcessing $event) {
             //
         });
 
-        Event::listen(JobProcessed::class, function ($event) {
+        Event::listen(JobProcessed::class, function (JobProcessed $event) {
             $this->decrementFunnel($event->job->getQueue(), $event->job->payload());
         });
 
-        Event::listen(JobFailed::class, function ($event) {
+        Event::listen(JobFailed::class, function (JobFailed $event) {
             $this->decrementFunnel($event->job->getQueue(), $event->job->payload());
         });
     }

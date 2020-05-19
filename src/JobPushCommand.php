@@ -4,7 +4,6 @@
 namespace Booni3\VaporQueueManager;
 
 
-use App\Traits\ThrottlesVaporJob;
 use Aws\Sqs\SqsClient;
 use Carbon\Carbon;
 use Illuminate\Cache\CacheManager;
@@ -14,6 +13,7 @@ use Illuminate\Database\DatabaseManager;
 use Illuminate\Queue\QueueManager;
 use Illuminate\Queue\SqsQueue;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 
 class JobPushCommand extends Command
 {
@@ -96,30 +96,50 @@ class JobPushCommand extends Command
             ->oldest('id')
             ->cursor()
             ->groupBy('queue')
-            ->each(function (Collection $jobs, $key) {
+            ->each(function (Collection $jobs, $queue) {
                 foreach ($jobs as $job) {
-                    if ($this->isThrottled($key, $job->payload)) {
+                    if ($this->isThrottled($queue)) {
                         return true;
                     }
 
                     $this->dispatchJobToSqs($job);
-                    $this->jobDispatched($key, $job);
+                    $this->jobDispatched($queue, $job);
                 }
             });
     }
 
     protected function dispatchJobToSqs($job)
     {
-        $this->queue->pushRawDirect($job->payload, $this->toValidSqsQueue($job));
+        unset($payload);
+        if($this->usingVirtualQueue($job)){
+            $payload = json_decode($job->payload);
+            $payload->virtualQueue = $this->normalizedQueueName($job->queue);
+        }
+
+        $this->queue->pushRawDirect($payload ?? $job->payload, $this->toValidSqsQueue($job));
     }
 
     protected function toValidSqsQueue($job): string
     {
-        if(in_array($job->queue, $this->sqsQueues)){
-            return $job->queue;
+        if($this->usingVirtualQueue($job)){
+            return $this->defaultQueue;
         }
 
-        return $this->defaultQueue;
+        return $job->queue;
+    }
+
+    protected function usingVirtualQueue($job): bool
+    {
+        return ! in_array($job->queue, $this->sqsQueues);
+    }
+
+    protected function normalizedQueueName($queue): string
+    {
+        if (Str::startsWith($queue, 'http')) {
+            return substr($queue, strrpos($queue, '/') + 1);
+        }
+
+        return $queue;
     }
 
     protected function jobDispatched($key, $job)
