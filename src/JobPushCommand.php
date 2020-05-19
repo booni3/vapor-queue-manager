@@ -68,6 +68,7 @@ class JobPushCommand extends Command
     {
         parent::__construct();
 
+        $this->killAt = Carbon::now()->addSeconds(60);
         $this->defaultQueue = config('vapor-queue-manager.default_queue');
         $this->limits = config('vapor-queue-manager.limits');
     }
@@ -143,12 +144,8 @@ class JobPushCommand extends Command
         DB::table('jobs')->delete($job->id);
     }
 
-    protected function shouldLoop($maxRunTime = 60, $loopDelay = 1): bool
+    protected function shouldLoop($loopDelay = 1): bool
     {
-        if (!$this->killAt) {
-            $this->killAt = Carbon::now()->addSeconds($maxRunTime);
-        }
-
         if ($bool = now()->lessThan($this->killAt)) {
             sleep($loopDelay);
 
