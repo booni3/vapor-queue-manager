@@ -6,6 +6,7 @@ namespace Booni3\VaporQueueManager;
 
 use Illuminate\Cache\RedisStore;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Str;
 use Mockery\Exception;
@@ -109,7 +110,7 @@ trait ThrottlesVaporJob
 
     protected function decrementFunnel($queue, $payload)
     {
-        $queue =  $this->virtualQueue($payload) ?? $queue;
+        $queue =  $this->virtualQueueFromPayload($payload) ?? $queue;
 
         \Sentry::captureMessage('queue: '.$queue);
 
@@ -124,8 +125,10 @@ trait ThrottlesVaporJob
         }
     }
 
-    protected function virtualQueue($payload): ?string
+    protected function virtualQueueFromPayload($payload): ?string
     {
+        Log::info('virtual queue', $payload);
+
         if(is_string($payload)){
             return json_decode($payload)->virtualQueue ?? null;
         }

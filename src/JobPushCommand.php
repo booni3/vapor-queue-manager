@@ -105,6 +105,7 @@ class JobPushCommand extends Command
     protected function dispatchJobToSqs($job)
     {
         unset($payload);
+
         if($this->usingVirtualQueue($job)){
             $payload = json_decode($job->payload);
             $payload->virtualQueue = $this->normalizedQueueName($job->queue);

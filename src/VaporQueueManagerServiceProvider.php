@@ -55,7 +55,7 @@ class VaporQueueManagerServiceProvider extends ServiceProvider
 
         $this->app->booted(function () {
             $schedule = app(Schedule::class);
-            $schedule->command('job:push')->everyMinute();
+//            $schedule->command('job:push')->everyMinute();
         });
     }
 
