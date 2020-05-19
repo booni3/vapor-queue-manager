@@ -112,12 +112,8 @@ trait ThrottlesVaporJob
     {
         $queue =  $this->virtualQueueFromPayload($payload) ?? $queue;
 
-        \Sentry::captureMessage('queue: '.$queue);
-
         foreach ($this->throttleKeys($queue) as $key) {
             $key = $this->funnelKey($key);
-
-            \Sentry::captureMessage('key: '.$key);
 
             if (Cache::has($key) && Cache::decrement($key) <= 0) {
                 Cache::delete($key);
@@ -128,18 +124,14 @@ trait ThrottlesVaporJob
     protected function virtualQueueFromPayload($payload): ?string
     {
         if(is_array($payload)){
-            \Sentry::captureMessage('virtualQueueFromPayload array: '.($payload['virtualQueue'] ?? 'none'));
             return $payload['virtualQueue'] ?? null;
         }
 
         if($payload = json_decode($payload, true)){
             if(json_last_error() == JSON_ERROR_NONE){
-                \Sentry::captureMessage('virtualQueueFromPayload json: '.($payload['virtualQueue'] ?? 'none'));
                 return $payload['virtualQueue'] ?? null;
             }
         }
-
-        \Sentry::captureMessage('virtualQueueFromPayload none');
 
         return null;
     }

@@ -1,6 +1,8 @@
 <?php
 
 return [
+    'enabled' => true,
+
     'default_queue' => 'oflow-app-staging',
 
     'limits' => [
