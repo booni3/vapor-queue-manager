@@ -6,6 +6,7 @@ namespace Booni3\VaporQueueManager;
 
 use Illuminate\Cache\RedisStore;
 use Illuminate\Cache\Repository;
+use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Str;
 use Mockery\Exception;
 
@@ -50,9 +51,7 @@ trait ThrottlesVaporJob
             throw new Exception('You must have redis installed to use the time based throttle');
         }
 
-        // Uses Redis::throttle
-        $this->cache
-            ->throttle($this->timeKey($key))
+        Redis::throttle($this->timeKey($key))
             ->block(0)
             ->allow($limit['allow']) // jobs
             ->every($limit['every']) // seconds
