@@ -127,16 +127,16 @@ trait ThrottlesVaporJob
 
     protected function virtualQueueFromPayload($payload): ?string
     {
-        if($payload = json_decode($payload)){
-            if(json_last_error() == JSON_ERROR_NONE){
-                \Sentry::captureMessage('virtualQueueFromPayload json: '.$payload->virtualQueue);
-                return $payload->virtualQueue ?? null;
-            }
+        if(is_array($payload)){
+            \Sentry::captureMessage('virtualQueueFromPayload array: '.$payload->virtualQueue ?? 'none');
+            return $payload->virtualQueue ?? null;
         }
 
-        if(is_array($payload)){
-            \Sentry::captureMessage('virtualQueueFromPayload array: '.$payload->virtualQueue);
-            return $payload->virtualQueue ?? null;
+        if($payload = json_decode($payload)){
+            if(json_last_error() == JSON_ERROR_NONE){
+                \Sentry::captureMessage('virtualQueueFromPayload json: '.$payload->virtualQueue ?? 'none');
+                return $payload->virtualQueue ?? null;
+            }
         }
 
         \Sentry::captureMessage('virtualQueueFromPayload none');
