@@ -41,6 +41,15 @@ trait ThrottlesVaporJob
         ];
     }
 
+    protected function normalizedQueueName($queue): string
+    {
+        if (Str::startsWith($queue, 'http')) {
+            return substr($queue, strrpos($queue, '/') + 1);
+        }
+
+        return $queue;
+    }
+
     protected function isThrottledByTime($key, $limit): bool
     {
         if (!($limit['allow'] && $limit['every'])) {

@@ -134,15 +134,6 @@ class JobPushCommand extends Command
         return ! in_array($job->queue, $this->sqsQueues);
     }
 
-    protected function normalizedQueueName($queue): string
-    {
-        if (Str::startsWith($queue, 'http')) {
-            return substr($queue, strrpos($queue, '/') + 1);
-        }
-
-        return $queue;
-    }
-
     protected function jobDispatched($key, $job)
     {
         $this->incrementFunnel($key, $job->payload);
