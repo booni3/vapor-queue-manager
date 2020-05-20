@@ -7,8 +7,9 @@ other parts of the system (RDS) will not be able to handle everything that is th
 
 Added to this, vapor currently does not have any fine grain control over the queue system. Some issues faced:
 
-- We throw 1000 jobs into the queue with a concurrency of 10 but then our 1001th job will have to wait, even if its the most critical.
-- We need jobs to process in order. Unless we setup new environments and FIFO queues, this is not possible.
+- There is no job/queue priority. We throw 1000 jobs into the queue with a concurrency of 10 but then our 1001th job will have to wait, even if it is the most critical.
+- Jobs cannot be processed in order, unless we setup new environments and/or FIFO queues. This adds a lot of complication and does not place nice with other packages using the queue.
+- SQS has some strict limits, such as 15 minutes for delayed dispatching.
 
 This solution fixes these issues and while it may not be best practice, it seems to work with some good scale. I have tested it
 processing a few hundred thousand jobs in under and hour. Only one process deals with the database queue so deadlocks should not be possible.
@@ -20,8 +21,8 @@ What it allows:
 
 How it works:
 
-- We have copied the database queue driver implementation from Laravel. When you push a job to the queue, it now pushes to your jobs table instead.
-- A command (job:push) runs every minute in a while-loop, and picks up eligible jobs from the table to dispatch to SQS.
+- The SqsQueue class has been overwritten. Now when you dispatch a job it will go into our jobs table. This acts as the buffer between your system and SQS.
+- A command (job:push) runs every minute in a while-loop, and picks up eligible jobs from the table to dispatch to SQS. The job is immediately deleted from the table.
 - As a job finises or fails the throttle/funnel parameters are updated.
 - All throttle/funnel values are stored in cache
 
