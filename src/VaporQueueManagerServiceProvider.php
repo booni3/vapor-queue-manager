@@ -56,7 +56,7 @@ class VaporQueueManagerServiceProvider extends ServiceProvider
         $this->app->booted(function () {
             if(config('vapor-queue-manager.enabled', false)){
                 $schedule = app(Schedule::class);
-                $schedule->command('job:push')->everyMinute();
+                $schedule->command('job:push')->everyMinute()->runInBackground();
             }
         });
     }
