@@ -69,7 +69,7 @@ class JobPushCommand extends Command
     {
         parent::__construct();
 
-        $this->killAt = Carbon::now()->addSeconds(60);
+        $this->killAt = Carbon::now()->addSeconds(config('vapor-queue-manager.command_timout', 50));
         $this->defaultQueue = config('vapor-queue-manager.default_queue');
         $this->limits = config('vapor-queue-manager.limits');
     }
