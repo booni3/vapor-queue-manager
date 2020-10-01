@@ -14,6 +14,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Redis;
+use Illuminate\Support\Str;
 
 class JobPushCommand extends Command
 {
@@ -85,6 +86,8 @@ class JobPushCommand extends Command
         $this->sqsQueues = $this->sqs->listQueues()->get('QueueUrls');
         $this->dispatchableQueues = $this->distinctQueuesInJobsTable();
 
+        $this->info(count($this->dispatchableQueues).' Queues found. ('.implode(',', $this->dispatchableQueues).')');
+
         while ($this->shouldLoop()) {
             $this->dispatchEligibleJobs();
         }
@@ -108,8 +111,12 @@ class JobPushCommand extends Command
                 ->cursor()
                 ->each(function($job) use($queue){
                     if ($this->isThrottled($queue)) {
+                        $this->info($queue.' is throttled');
+
                         return false;
                     }
+
+                    $this->info(get_class($job).' dispatching to '.$queue);
 
                     $this->dispatchJobToSqs($job);
                     $this->jobDispatched($queue, $job);
@@ -147,6 +154,7 @@ class JobPushCommand extends Command
     protected function jobDispatched($key, $job)
     {
         $this->incrementFunnel($key, $job->payload);
+
         DB::table('jobs')->delete($job->id);
     }
 
