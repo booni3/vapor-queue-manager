@@ -10,11 +10,8 @@ use Illuminate\Console\Command;
 use Illuminate\Contracts\Cache\Repository;
 use Illuminate\Database\DatabaseManager;
 use Illuminate\Queue\SqsQueue;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
-use Illuminate\Support\Facades\Redis;
-use Illuminate\Support\Str;
 
 class JobPushCommand extends Command
 {
@@ -88,7 +85,7 @@ class JobPushCommand extends Command
 
         $this->info(count($this->dispatchableQueues).' Queues found. ('.implode(',', $this->dispatchableQueues).')');
 
-        while ($this->shouldLoop()) {
+        while ($this->dispatchableQueues && $this->shouldLoop()) {
             $this->dispatchEligibleJobs();
         }
     }
